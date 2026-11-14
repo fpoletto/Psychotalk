@@ -1,0 +1,86 @@
+name: Desktop packages
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['core/**', 'desktop/**', 'scripts/**', 'Cargo*', 'rust-toolchain.toml', 'package*.json', 'playwright.config.mjs', '.github/workflows/desktop.yml']
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            package: macos-arm64
+          - runner: macos-15-intel
+            package: macos-x86_64
+          - runner: ubuntu-22.04
+            package: linux-x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: rustup toolchain install 1.100.0 --profile minimal --component clippy,rustfmt
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libevent-dev libssl-dev zlib1g-dev patchelf dbus-x11 gnome-keyring
+      - name: macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install openssl@3 libevent pkg-config
+      - name: Compile Tor
+        run: sh scripts/build-desktop-tor.sh
+      - name: Check Rust
+        run: |
+          cargo fmt --all --check
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo test --workspace
+          python3 scripts/private-build.py cargo build --locked --release -p psychotalk-desktop --bin psychotalk
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Browser dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Test real system keyring and browser on Linux
+        if: runner.os == 'Linux'
+        env:
+          PSYCHOTALK_TEST_BINARY: target/release/psychotalk
+          PSYCHOTALK_TEST_TOR: .tools/desktop-tor/tor-0.4.9.14/src/app/tor
+        run: |
+          dbus-run-session -- bash -c '
+            printf "%s\n" "psychotalk-ci-fixture" | gnome-keyring-daemon --unlock --components=secrets
+            PSYCHOTALK_TEST_KEYRING=1 cargo test -p psychotalk-desktop --test os_keyring
+            npm run test:web
+          '
+      - name: Test real system keyring and browser on macOS
+        if: runner.os == 'macOS'
+        env:
+          PSYCHOTALK_TEST_BINARY: target/release/psychotalk
+          PSYCHOTALK_TEST_TOR: .tools/desktop-tor/tor-0.4.9.14/src/app/tor
+        run: |
+          PSYCHOTALK_TEST_KEYRING=1 cargo test -p psychotalk-desktop --test os_keyring
+          npm run test:web
+      - name: Package native libraries and notices
+        run: python3 scripts/package-desktop.py
+      - name: Test installer against native package
+        run: python3 scripts/test-desktop-installer.py dist/*.tar.gz
+      - name: Check runtime path privacy
+        run: python3 scripts/check-runtime-privacy.py dist/*.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: psychotalk-${{ matrix.package }}
+          path: |
+            dist/*.tar.gz
+            dist/SHA256SUMS-*.txt
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-${{ matrix.package }}
+          path: test-results/
+          if-no-files-found: ignore

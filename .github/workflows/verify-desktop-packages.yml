@@ -1,0 +1,78 @@
+name: Verify distributed desktop
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Desktop packages run containing the three native artifacts
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            package: macos-arm64
+          - runner: macos-15-intel
+            package: macos-x86_64
+          - runner: ubuntu-22.04
+            package: linux-x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: psychotalk-${{ matrix.package }}
+          path: stage
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify and extract native package
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          for manifest in Path('stage').glob('SHA256SUMS-*.txt'):
+              for line in manifest.read_text().splitlines():
+                  expected,name=line.split()
+                  assert hashlib.sha256((manifest.parent/name).read_bytes()).hexdigest()==expected
+          PY
+          tar -xzf stage/*.tar.gz -C stage
+          stage/psychotalk/psychotalk --version
+          stage/psychotalk/libexec/tor --version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Browser test dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: System keyring dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y dbus-x11 gnome-keyring
+      - name: Test distributed Linux binary and bundled Tor with real Secret Service
+        if: runner.os == 'Linux'
+        env:
+          PSYCHOTALK_TEST_BINARY: stage/psychotalk/psychotalk
+          PSYCHOTALK_TEST_USE_BUNDLED_TOR: '1'
+        run: |
+          dbus-run-session -- bash -c '
+            printf "%s\n" "psychotalk-ci-fixture" | gnome-keyring-daemon --unlock --components=secrets
+            npm run test:web
+          '
+      - name: Test distributed macOS binary and bundled Tor with real Keychain
+        if: runner.os == 'macOS'
+        env:
+          PSYCHOTALK_TEST_BINARY: stage/psychotalk/psychotalk
+          PSYCHOTALK_TEST_USE_BUNDLED_TOR: '1'
+        run: npm run test:web
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: distributed-${{ matrix.package }}
+          path: test-results/
+          if-no-files-found: ignore

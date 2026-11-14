@@ -1,0 +1,33 @@
+.tools/
+.gradle/
+target/
+**/build/
+local.properties
+*.jks
+.DS_Store
+test-results/
+dist/
+android/app/src/main/jniLibs/
+android/app/src/main/assets/licenses/dependencies/
+
+# Local credentials and encrypted runtime vaults
+.env
+.env.*
+!.env.example
+*.keystore
+*.p12
+*.pfx
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Browser test tools
+node_modules/
+playwright-report/
+
+__pycache__/
+*.pyc
+
+# Local-only transfer utility
+.local-transfer/

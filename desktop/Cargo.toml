@@ -1,0 +1,30 @@
+[package]
+name = "psychotalk-desktop"
+version = "0.4.2"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "psychotalk"
+path = "src/main.rs"
+
+[dependencies]
+psychotalk-core = { path = "../core" }
+anyhow = "1"
+aes-gcm = { version = "0.10.3", features = ["zeroize"] }
+axum = { version = "0.8.9", features = ["json"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "time"] }
+keyring = { version = "=3.6.3", features = ["apple-native", "sync-secret-service", "crypto-rust", "vendored"] }
+rand = "0.8"
+hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+zeroize = { version = "1", features = ["derive"] }
+subtle = "2"
+webbrowser = "1"
+
+[dev-dependencies]
+tempfile = "3"
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
