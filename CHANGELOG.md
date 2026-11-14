@@ -7,7 +7,7 @@ Formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ### Changed
 - README translated into English and expanded with desktop 0.4.2 resume behavior, security benefits/boundaries, platform requirements, and current validation limits.
 - Public distribution prepared from a clean source history; original repository retained privately. Commit authorship uses a non-personal address.
-- Rust release builds remap workstation source/home paths; APK and desktop archives are checked before publication.
+- Rust release builds remap workstation source/home paths; vendored OpenSSL and desktop Tor build in anonymous temporary roots. APKs, signing/archive bytes and desktop archives are checked before publication.
 
 ## [0.3.1-experimental] — 2026-11-14
 

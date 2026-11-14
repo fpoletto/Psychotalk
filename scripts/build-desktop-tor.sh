@@ -19,13 +19,31 @@ if not (root/'tor-0.4.9.14').exists():
     if path.is_absolute() or '..' in path.parts or not (member.isfile() or member.isdir()):raise SystemExit('Unsafe source archive')
    tar.extractall(root,members=members)
 PY
-cd .tools/desktop-tor/tor-0.4.9.14
+tor_package_root="$PWD/.tools/desktop-tor/tor-0.4.9.14"
+# Tor's C build records source/build directories independently of Rust flags.
+tor_build_tmp=$(mktemp -d /tmp/psychotalk-tor-build.XXXXXX)
+trap 'rm -rf "$tor_build_tmp"' EXIT HUP INT TERM
+python3 - "$tor_build_tmp" <<'PYBUILD'
+from pathlib import Path
+import sys,tarfile
+with tarfile.open('.tools/downloads/tor-desktop-0.4.9.14.tar.gz') as archive:
+ if hasattr(tarfile,'data_filter'):archive.extractall(sys.argv[1],filter='data')
+ else:
+  members=archive.getmembers()
+  for member in members:
+   path=Path(member.name)
+   if path.is_absolute() or '..' in path.parts or not (member.isfile() or member.isdir()):raise SystemExit('Unsafe source archive')
+  archive.extractall(sys.argv[1],members=members)
+PYBUILD
+cd "$tor_build_tmp/tor-0.4.9.14"
 if [ "$(uname -s)" = Darwin ]; then
   tor_openssl=$(brew --prefix openssl@3)
   tor_event=$(brew --prefix libevent)
   export CPPFLAGS="-I$tor_openssl/include -I$tor_event/include"
   export LDFLAGS="-L$tor_openssl/lib -L$tor_event/lib"
 fi
-if [ ! -f Makefile ]; then ./configure --disable-asciidoc --disable-unittests --disable-lzma --disable-zstd; fi
+./configure --disable-asciidoc --disable-unittests --disable-lzma --disable-zstd
 make -j4
 ./src/app/tor --version
+
+cp ./src/app/tor "$tor_package_root/src/app/tor"
