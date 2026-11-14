@@ -15,3 +15,13 @@ Review before release:
 5. Keep unrelated repositories' visibility unchanged.
 
 This is a scoped privacy review, not a guarantee of perfect PII/secret detection or a security audit. Checksum verification detects file corruption and does not independently authenticate a compromised repository/build system.
+
+## Verified publication state
+
+The original repository retains its original GitHub identity and is private/archived. The replacement is a standalone public repository with a new root commit, followed only by newly reviewed commits. A clone with credential helpers and global Git configuration disabled contained no original private-history commit. Anonymous GitHub requests could access the new repository but could not access the private archive or the old commit through the new repository.
+
+Known private account/email markers were absent from the reviewed source and public commit metadata. The Android release was checked entry-by-entry and as raw/signature bytes; its certificate subject is generic. A local Gitleaks scan found no credential findings in the clean source history. These findings are scoped checks, not a promise of perfect detection.
+
+The comparison of all other existing repository visibility/archive states matched the pre-migration inventory. Only the approved project reorganization changed those states.
+
+Public Android and desktop release assets were verified against their published SHA-256 values. Both tags point directly to clean commits and introduce no separate tagger email. The public installer download/install/update/uninstall check used a disposable directory; no personal vault was accessed. Detailed build and test links are in [VALIDATION.md](VALIDATION.md).

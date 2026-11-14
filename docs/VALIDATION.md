@@ -11,6 +11,26 @@ This repository starts from a reviewed source snapshot. Earlier Git history, wor
 - Rust release builds use `scripts/private-build.py`. APK/archive contents are checked with `scripts/check-runtime-privacy.py` for the current workstation's source/home prefixes.
 - Dependency author/license notices are retained. The privacy review concerns the project's private account/contact data, vaults, build paths, and credentials.
 
+## Desktop 0.4.2 public build results
+
+The [public desktop release](https://github.com/fpoletto/Psychotalk/releases/tag/v0.4.2-experimental) includes the three native packages, install.sh and SHA256SUMS. Each BUILD.json identifies `9ba00ce05f0a986b7b1b3700c1473ecbe6e8ca68`.
+
+- [Native build/test/installer/path-privacy matrix](https://github.com/fpoletto/Psychotalk/actions/runs/43650805311): passed on macOS ARM64, macOS Intel and Ubuntu 22.04. Real Keychain/Secret Service checks were explicitly exercised.
+- [The same final packages with bundled Tor](https://github.com/fpoletto/Psychotalk/actions/runs/43651920599): both browser cases passed on all three platforms, including resume, duplication, cleanup, denied storage and native restart.
+- The initial publication build's privacy guard rejected Tor's embedded CI build directory before package upload. Tor was rebuilt from its pinned official source in an anonymous temporary directory; only the corrected passing artifacts were released.
+- The source/home-prefix check passed in CI. Every extracted entry and raw archive was additionally checked locally for known private account/email markers; origin, platform and installer bytes were verified. All five published asset SHA-256 values matched the reviewed files.
+- The install script was downloaded anonymously from the new public release. With the existing authenticated GitHub CLI, a separate disposable directory completed real install/update/uninstall and preserved a sentinel data file. This sentinel is not an encrypted-vault reopen test; browser/keyring/vault checks are separate above. The personal installed profile was not used.
+
+## Android 0.3.1 public rebuild results
+
+The [public Android release](https://github.com/fpoletto/Psychotalk/releases/tag/v0.3.1-experimental) includes the main APK, SHA256SUMS and BUILD_ANDROID.json. Runtime sources match clean snapshot `9f8348983ebc80dca5c683566d382f07f92be4d2`. APK SHA-256: `acabcf05bb086c45337dddeeaef1ea767823531c07b651e54a67fd62f64ea235`.
+
+- APK verification passed. Its signer SHA-256 remains `7c7dcbabbf8a3294f88d99700d888ced25f2af830355c957987aa99a0bd7486e`, with the generic Android Debug certificate subject. No signing private key is published.
+- Every extracted APK entry and the raw APK/signing block were checked for known private account/email markers. The automated current-source/home-prefix check passed after rebuilding Rust and vendored OpenSSL without personal paths.
+- The dedicated ARM64 API 30 emulator installed the old 0.3.0 APK, seeded a separate encrypted test vault, then installed 0.3.1 with `install -r`. Identity/onion code, queued text, pending author-deletion state and Keystore access were preserved. Seed and verify each executed one effective case; each runner printed two including its opposite, skipped phase.
+- The regular Android run passed eight effective cases. Its runner printed 11 including the two conditional upgrade tests and the separate interop case, skipped in that normal run. This was not a new mixed Tor/physical-device proof.
+- Published asset SHA-256 values were checked against the reviewed local files. Older APKs were not copied into the public repository/releases.
+
 ## Checks carried forward and rerun for public builds
 
 | Area | Verification and scope |

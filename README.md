@@ -13,6 +13,8 @@ The Android interface uses Kotlin/Compose. The desktop interface is served by a 
 - [Android 0.3.1 experimental](https://github.com/fpoletto/Psychotalk/releases/tag/v0.3.1-experimental): main ARM64 APK and checksum.
 - [Source repository](https://github.com/fpoletto/Psychotalk): source and documentation on `main`.
 
+This public repository starts from a reviewed source snapshot; older history and artifacts were retained privately. See the [publication privacy review](docs/PUBLICATION.md).
+
 Each installation has its own identity and local vault. Desktop does not mirror or import an Android identity automatically. The two clients can exchange messages and participate in the same fixed groups.
 
 ## Install on macOS or Linux
